@@ -8,10 +8,17 @@ from volcengine.Credentials import Credentials
 from volcengine.auth.SignerV4 import SignerV4
 import pandas as pd
 import ast
+import openai
+from eval import locomo_response, locomo_grader
 
 AK = "your AK" # please see https://www.volcengine.com/docs/84313/1783347 for how to get ak/sk
 SK = "your SK"
 Domain = "api-knowledgebase.mlp.cn-beijing.volces.com"
+
+client = openai.AsyncAzureOpenAI(
+    azure_endpoint="your_url",
+    api_key="your_api_key"
+)
 
 
 def get_dataset(url_file_path: str):
@@ -253,15 +260,47 @@ def search_memory(collection_name, query, query_users):
         "limit": 15,
         "filter": {
             "user_id": query_users,
-            "memory_type": ["sys_event_v1", "sys_profile_v1"]
+            "memory_type": ["sys_event_v1"]
         }
     }
 
     rsp = internal_request('POST', path, playload)
-    print(rsp.json())
+    return rsp.json()["data"].result_list
 
 
-if __name__ == '__main__':
+def search_profile(collection_name, query, query_users):
+    path = "/api/memory/search"
+    playload = {
+        "collection_name": collection_name,
+        "query": query,
+        "limit": 2,
+        "filter": {
+            "user_id": query_users,
+            "memory_type": ["sys_profile_v1"]
+        }
+    }
+
+    rsp = internal_request('POST', path, playload)
+    return rsp.json()["data"].result_list
+
+
+async def eval_locomo(query_file_path):
+    query_df = pd.read_csv(query_file_path)
+    result_dict = {1: [], 2: [], 3: [], 4:[]}
+    for index, row in query_df.iterrows():
+        query = row["query"]
+        query_usr = row["query_user"].split(',')
+        answer = row["answer"]
+        category = int(row["category"])
+        memory_list = search_memory(collection_name, query, query_usr)
+        profile = search_profile(collection_name, query, query_usr)
+        predict_answer = await locomo_response(client, memory_list, profile, query)
+        eval_res = await locomo_grader(client, query, answer, predict_answer)
+        result_dict[category].append(eval_res)
+    return result_dict
+
+
+async def main():
     current_dir = "."
     dataset_dir = os.path.join(current_dir, "dataset")
     url_file_path = os.path.join(dataset_dir, "dataset_url.txt")
@@ -278,4 +317,14 @@ if __name__ == '__main__':
         session_id = "session_" + str(row['build_index'])
         messages = ast.literal_eval(row['messages'])
         add_memory(messages, session_id, collection_name)
+
+    eval_res = await eval_locomo(query_file_path)
+    print(eval_res)
+
+if __name__ == '__main__':
+    main()
+
+
+
+
 
