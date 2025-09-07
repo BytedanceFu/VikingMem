@@ -1,0 +1,1 @@
+https://github.com/snap-research/locomo/blob/main/data/locomo10.json
