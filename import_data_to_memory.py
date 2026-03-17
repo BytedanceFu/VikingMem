@@ -12,7 +12,7 @@ load_dotenv()
 
 API_KEY = os.getenv('MEMORY_API_KEY')
 Domain = "api-knowledgebase.mlp.cn-beijing.volces.com"
-DEFAULT_SLEEP_MS = 100
+DEFAULT_SLEEP_MS = 200
 
 
 def import_session_to_memory(collection_name, group_id, messages):
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--group', default='locomo_test_01')
     parser.add_argument('--start', type=int, default=1)
     parser.add_argument('--end', type=int, default=None)
-    parser.add_argument('--workers', type=int, default=4)
+    parser.add_argument('--workers', type=int, default=1)
     args = parser.parse_args()
 
     if args.start < 1:
