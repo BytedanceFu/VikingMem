@@ -62,7 +62,7 @@ python import_data_to_memory.py
 ## 第四步：记忆检索与评测
 
 ```bash
-python evaluate_locomo.py --csv data/query.csv --group locomo_test_02
+python evaluate_locomo.py --csv data/query.csv 
 ```
 
 可选参数：
